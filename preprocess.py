@@ -7,6 +7,7 @@ def get_alpha_beta_chains(df, column_name):
     df[f'{column_name}_a'] = df[column_name].apply(lambda x: x.split(';')[0])
     df[f'{column_name}_b'] = df[column_name].apply(lambda x: x.split(';')[1])
     df = df.drop(columns = column_name)
+    print('hi')
     return df
 
 def preprocess_data(file_path: str):
