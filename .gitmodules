@@ -1,0 +1,3 @@
+[submodule "functions/GIANA"]
+	path = functions/GIANA
+	url = https://github.com/s175573/GIANA.git
