@@ -38,7 +38,7 @@ class BertTcr(BaseClass):
     
     def _preprocess_data(self, 
                         species: str, 
-                        antigen_species: str, 
+                        antigen_species: str = 'HomoSapiens', 
                         chain_selection: str = 'TRB', 
                         min_vdj_score: int = 1
                         ) -> None:
@@ -143,8 +143,8 @@ class BertTcr(BaseClass):
     def cluster_data(self, num_clusters):
         clusters = AgglomerativeClustering(n_clusters=num_clusters).fit(self._t_cells_reduced)
         
-        
-        
+    def record_performance(self):
+        return 'Hi'
         
         
         
