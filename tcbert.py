@@ -11,6 +11,7 @@ import umap
 import umap.plot
 from transformers import BertModel 
 from sklearn.cluster import *
+from sklearn.metrics import silhouette_score
 
 from base import BaseClass
 from utils import get_pretrained_bert_tokenizer,  \
@@ -36,11 +37,11 @@ class BertTcr(BaseClass):
         return _model, _tokenizer
         
     
-    def _preprocess_data(self, 
-                        species: str, 
-                        antigen_species: str = 'HomoSapiens', 
-                        chain_selection: str = 'TRB', 
-                        min_vdj_score: int = 1
+    def _preprocess_data(self,  
+                         species: str = '',
+                         antigen_species: str = 'HomoSapiens', 
+                         chain_selection: str = 'TRB', 
+                         min_vdj_score: int = 1
                         ) -> None:
         
         data = self._input_data
@@ -49,26 +50,24 @@ class BertTcr(BaseClass):
         self._settings['Antigen_species'] = antigen_species
         self._settings['Chain'] = chain
         self._settings['Minimum_VDJ_score'] = min_vdj_score
+        data = data[(data['species'] == antigen_species) & (data['vdjdb.score'] > 0) & (data['gene'] == chain_selection)]
         
-        data = data[(data['species'] == species) & \
-                    (data['vdjdb.score'] > 0) & \
-                    (data['chain'] == chain_selection)]
+        data = data[['gene','cdr3','v.segm','j.segm','species','mhc.a','mhc.b','mhc.class','antigen.epitope','antigen.species','vdjdb.score', 'complex.id']]
         
         data_cols = data.columns.difference(['complex.id', 'vdjdb.score'])
         data = data.drop_duplicates(subset=data_cols)
         data.reset_index(inplace = True)
         
-        self.preprocessed_data =  data['cdr3'].tolist()
+        self._processed_data =  data['cdr3'].tolist()
+        self._antigen_epitope = data['antigen.epitope']
     
         
     def run_model(self, 
-                  data : pd.DataFrame,
                   n_layer: int = -1
                   ) -> None:
         
-        self._preprocess_data(data)
+        self._preprocess_data()
         model, model_tokenizer = self._load_model_config(MODEL_NAME)
-        layers = [n_layer]
         chunks = [s if is_whitespaced(s) else insert_whitespace(s) for s in self._processed_data]
         
         chunks_pair = [None]
@@ -78,7 +77,7 @@ class BertTcr(BaseClass):
         start_time = time.time()
         #compute forward pass of model
         with torch.no_grad():
-            for seq_chunk in chunks_zipped:
+            for i, seq_chunk in enumerate(chunks_zipped):
                 #tokenize input sequence
                 encoded = model_tokenizer(
                     *seq_chunk, padding="max_length", max_length=64, return_tensors="pt"
@@ -88,22 +87,12 @@ class BertTcr(BaseClass):
                 encoded = {k: v.to(self._device) for k, v in encoded.items()}
                 #forward pass
                 x = model.forward(**encoded, output_hidden_states=True, output_attentions=True)
-                for i in range(len(seq_chunk[0])):
-                        e = []
-                        for l in layers:
-                            # Select the l-th hidden layer for the i-th example
-                            h = (x.hidden_states[l][i].cpu().numpy().astype(np.float64))
-                            if seq_chunk[1] is None:
-                                seq_len = len(seq_chunk[0][i].split())
-                            seq_hidden = h[1 : 1 + seq_len]
-                            #obtain mean embedding from last hidden layer.
-                            e.append(seq_hidden.mean(axis=0))
 
-                        e = np.hstack(e)
-                        assert len(e.shape) == 1
-                        embeddings.append(e)
-                
-        
+                # Select the l-th hidden layer for the i-th example
+                h = (x.hidden_states[n_layer][0].cpu().numpy().astype(np.float64))
+                embeddings.append(h.mean(axis=0))
+               
+    
         if len(embeddings[0].shape) == 1:
             embeddings = np.stack(embeddings)
         else:
@@ -121,7 +110,7 @@ class BertTcr(BaseClass):
             raise ValueError('Beta chain and embeddings not found: please first run the model')
             
         _embedding_df = pd.concat([pd.DataFrame(self._t_cell_rep), 
-                                   self._processed_data['antigen.epitope']], 
+                                   self._antigen_epitope], 
                                   axis = 1)
         
         _value_counts_antigen = _embedding_df['antigen.epitope'].value_counts()
@@ -137,14 +126,21 @@ class BertTcr(BaseClass):
         f.set_title(f'Beta Chain by antigen specificity - Bert Embedding', fontsize=12)
         f.get_figure().savefig(f'{self._output_dir}/beta_chain_umap_bert.png')
         
-        self._t_cells_reduced = _distances_reduced
+        self._t_cells_reduced = pd.DataFrame(_distances_reduced.embedding_)
+        print(_embedding_df_filtered['antigen.epitope'])
+        self._t_cells_reduced['Epitope'] = _embedding_df_filtered['antigen.epitope'].tolist()
         
     
-    def cluster_data(self, num_clusters):
-        clusters = AgglomerativeClustering(n_clusters=num_clusters).fit(self._t_cells_reduced)
+    def _cluster_data(self):
+        km = KMeans(n_clusters=7, random_state=42)
+        km.fit_predict(self._t_cells_reduced.iloc[:, :-2])
+        _score = silhouette_score(self._t_cells_reduced.iloc[:, :-2], 
+                                  km.labels_)
+        self._settings['silhouette score'] = _score
+        
         
     def record_performance(self):
-        return 'Hi'
+        return self._cluster_data() 
         
         
         
