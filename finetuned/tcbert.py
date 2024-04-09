@@ -13,8 +13,8 @@ from transformers import BertModel
 from sklearn.cluster import *
 from sklearn.metrics import silhouette_score
 
-from base import BaseClass
-from utils import get_pretrained_bert_tokenizer,  \
+from finetuned.base import BaseClass
+from finetuned.utils import get_pretrained_bert_tokenizer,  \
                   insert_whitespace, \
                   is_whitespaced
 
@@ -127,7 +127,6 @@ class BertTcr(BaseClass):
         f.get_figure().savefig(f'{self._output_dir}/beta_chain_umap_bert.png')
         
         self._t_cells_reduced = pd.DataFrame(_distances_reduced.embedding_)
-        print(_embedding_df_filtered['antigen.epitope'])
         self._t_cells_reduced['Epitope'] = _embedding_df_filtered['antigen.epitope'].tolist()
         
     
