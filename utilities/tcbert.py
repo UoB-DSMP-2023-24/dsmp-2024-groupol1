@@ -13,8 +13,8 @@ from transformers import BertModel
 from sklearn.cluster import *
 from sklearn.metrics import silhouette_score
 
-from finetuned.base import BaseClass
-from finetuned.utils import get_pretrained_bert_tokenizer,  \
+from utilities.base import BaseClass
+from utilities.utils import get_pretrained_bert_tokenizer,  \
                   insert_whitespace, \
                   is_whitespaced
 
