@@ -5,6 +5,9 @@ from datetime import datetime
 
 import pandas as pd
 
+from sklearn.cluster import *
+from sklearn.metrics import adjusted_mutual_info_score
+
 
 class BaseClass(ABC):
     """
@@ -38,6 +41,16 @@ class BaseClass(ABC):
     @abstractmethod
     def run_model(self):
         pass
+    
+    
+    def _cluster_data(self):
+        _actuals = self._t_cells_reduced['Epitope'].astype('category').cat.codes.tolist()
+        km = KMeans(n_clusters=7, random_state=42)
+        km.fit_predict(self._t_cells_reduced.iloc[:, :-2])
+        _score = adjusted_mutual_info_score(_actuals, 
+                                            km.labels_)
+        self._settings['adjusted_mutual_information_score'] = _score
+        print('Adjusted mutual information score: ', _score)
     
     
         
