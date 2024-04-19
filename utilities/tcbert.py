@@ -11,12 +11,13 @@ import umap
 import umap.plot
 from transformers import BertModel 
 from sklearn.cluster import *
-from sklearn.metrics import silhouette_score
+from sklearn.metrics import adjusted_mutual_info_score
 
 from utilities.base import BaseClass
 from utilities.utils import get_pretrained_bert_tokenizer,  \
-                  insert_whitespace, \
-                  is_whitespaced
+                            insert_whitespace, \
+                            is_whitespaced, \
+                            visualise_data
 
 
 MODEL_NAME = 'wukevin/tcr-bert'
@@ -120,22 +121,19 @@ class BertTcr(BaseClass):
         
         _distances_reduced = umap.UMAP(n_components = 2).fit(_embedding_df_filtered.iloc[:, :-1].values)
         
-        f = umap.plot.points(_distances_reduced, labels = _embedding_df_filtered['antigen.epitope'])
-        f.set_xlabel('UMAP Dimension 1', fontsize=10)
-        f.set_ylabel('UMAP Dimension 2', fontsize=10)
-        f.set_title(f'Beta Chain by antigen specificity - Bert Embedding', fontsize=12)
-        f.get_figure().savefig(f'{self._output_dir}/beta_chain_umap_bert.png')
+        visualise_data(_distances_reduced, _embedding_df_filtered['antigen.epitope'].tolist(), self._output_dir)
         
         self._t_cells_reduced = pd.DataFrame(_distances_reduced.embedding_)
         self._t_cells_reduced['Epitope'] = _embedding_df_filtered['antigen.epitope'].tolist()
         
     
     def _cluster_data(self):
+        _actuals = self._t_cells_reduced['Epitope'].astype('category').cat.codes.tolist()
         km = KMeans(n_clusters=7, random_state=42)
         km.fit_predict(self._t_cells_reduced.iloc[:, :-2])
-        _score = silhouette_score(self._t_cells_reduced.iloc[:, :-2], 
-                                  km.labels_)
-        self._settings['silhouette score'] = _score
+        _score = adjusted_mutual_info_score(_actuals, 
+                                            km.labels_)
+        self._settings['adjusted_mutual_information_score'] = _score
         
         
     def record_performance(self):

@@ -8,7 +8,7 @@ from math import floor
 from transformers import BertModel, BertTokenizer
 
 import umap
-from tcrdist.repertoire import TCRrep
+#from tcrdist.repertoire import TCRrep
 
 
 #special tokens
@@ -108,3 +108,11 @@ def calculate_dist_and_umap(df: pd.DataFrame,
 
 
   return embedding, distance_df
+
+
+def visualise_data(data, labels, output_dir):
+  f = umap.plot.points(data, labels = labels)
+  f.set_xlabel('UMAP Dimension 1', fontsize=10)
+  f.set_ylabel('UMAP Dimension 2', fontsize=10)
+  f.set_title(f'Beta Chain by antigen specificity - Bert Embedding', fontsize=12)
+  f.get_figure().savefig(f'{output_dir}/beta_chain_umap_bert.png')
