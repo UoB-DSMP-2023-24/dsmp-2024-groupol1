@@ -8,6 +8,7 @@ from math import floor
 from transformers import BertModel, BertTokenizer
 
 import umap
+import umap.plot
 #from tcrdist.repertoire import TCRrep
 
 
@@ -115,4 +116,6 @@ def visualise_data(data, labels, output_dir):
   f.set_xlabel('UMAP Dimension 1', fontsize=10)
   f.set_ylabel('UMAP Dimension 2', fontsize=10)
   f.set_title(f'Beta Chain by antigen specificity - Bert Embedding', fontsize=12)
+  if not os.path.exists(output_dir):
+    os.makedirs(output_dir)
   f.get_figure().savefig(f'{output_dir}/beta_chain_umap_bert.png')
