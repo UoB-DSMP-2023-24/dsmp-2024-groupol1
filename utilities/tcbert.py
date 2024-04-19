@@ -8,10 +8,7 @@ import numpy as np
 import pandas as pd
 
 import umap
-import umap.plot
-from transformers import BertModel 
-from sklearn.cluster import *
-from sklearn.metrics import adjusted_mutual_info_score
+from transformers import BertModel
 
 from utilities.base import BaseClass
 from utilities.utils import get_pretrained_bert_tokenizer,  \
@@ -121,21 +118,11 @@ class BertTcr(BaseClass):
         
         _distances_reduced = umap.UMAP(n_components = 2).fit(_embedding_df_filtered.iloc[:, :-1].values)
         
-        visualise_data(_distances_reduced, _embedding_df_filtered['antigen.epitope'].tolist(), self._output_dir)
+        visualise_data(_distances_reduced, _embedding_df_filtered['antigen.epitope'], self._output_dir)
         
         self._t_cells_reduced = pd.DataFrame(_distances_reduced.embedding_)
         self._t_cells_reduced['Epitope'] = _embedding_df_filtered['antigen.epitope'].tolist()
-        
-    
-    def _cluster_data(self):
-        _actuals = self._t_cells_reduced['Epitope'].astype('category').cat.codes.tolist()
-        km = KMeans(n_clusters=7, random_state=42)
-        km.fit_predict(self._t_cells_reduced.iloc[:, :-2])
-        _score = adjusted_mutual_info_score(_actuals, 
-                                            km.labels_)
-        self._settings['adjusted_mutual_information_score'] = _score
-        
-        
+             
     def record_performance(self):
         return self._cluster_data() 
         
