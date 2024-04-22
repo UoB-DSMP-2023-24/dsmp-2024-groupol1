@@ -7,7 +7,8 @@ import torch
 import numpy as np
 import pandas as pd
 
-import umap
+from sklearn.manifold import TSNE
+from sklearn.decomposition import PCA
 from transformers import BertModel
 
 from utilities.base import BaseClass
@@ -115,12 +116,18 @@ class BertTcr(BaseClass):
         #we will only visualise the top 7 most commonly occuring antigens in dataset else visualisation would be uninterpretable
         _top_10_value_counts = _value_counts_antigen.nlargest(7)
         _embedding_df_filtered = _embedding_df[_embedding_df['antigen.epitope'].isin(_top_10_value_counts.index)]
+
+
+        PCA_model = PCA(n_components = 50)
+        _embedding_pca = PCA_model.fit_transform(_embedding_df_filtered.iloc[:, :-1].values)
+        #apply TSNE on 50 components.
+        TSNE_model = TSNE(n_components=2, perplexity=30.0)
+        dist_reduced = TSNE_model.fit_transform(_embedding_pca)
         
-        _distances_reduced = umap.UMAP(n_components = 2).fit(_embedding_df_filtered.iloc[:, :-1].values)
+        visualise_data(dist_reduced, _embedding_df_filtered['antigen.epitope'], self._output_dir)
         
-        visualise_data(_distances_reduced, _embedding_df_filtered['antigen.epitope'], self._output_dir)
-        
-        self._t_cells_reduced = pd.DataFrame(_distances_reduced.embedding_)
+        self._t_cells_reduced = pd.DataFrame(dist_reduced, 
+                                             columns = ['Component 1', 'Component 2'])
         self._t_cells_reduced['Epitope'] = _embedding_df_filtered['antigen.epitope'].tolist()
              
     def record_performance(self):
