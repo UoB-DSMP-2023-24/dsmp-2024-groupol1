@@ -7,6 +7,8 @@ import torch
 import numpy as np
 import pandas as pd
 
+import umap
+
 from sklearn.manifold import TSNE
 from sklearn.decomposition import PCA
 from transformers import BertModel
@@ -102,8 +104,7 @@ class BertTcr(BaseClass):
         self._settings['time_to_run'] = end_time - start_time
         
     
-    def reduce_dimensionality(self
-                              ) -> None:
+    def reduce_dimensionality(self, title) -> None:
         
         if (self._t_cell_rep is None) or (self._processed_data is None):
             raise ValueError('Beta chain and embeddings not found: please first run the model')
@@ -124,11 +125,12 @@ class BertTcr(BaseClass):
         TSNE_model = TSNE(n_components=2, perplexity=30.0)
         dist_reduced = TSNE_model.fit_transform(_embedding_pca)
         
-        visualise_data(dist_reduced, _embedding_df_filtered['antigen.epitope'], self._output_dir)
+        visualise_data(dist_reduced, _embedding_df_filtered['antigen.epitope'], self._output_dir, title)
         
         self._t_cells_reduced = pd.DataFrame(dist_reduced, 
                                              columns = ['Component 1', 'Component 2'])
         self._t_cells_reduced['Epitope'] = _embedding_df_filtered['antigen.epitope'].tolist()
+             
              
     def record_performance(self):
         return self._cluster_data() 
