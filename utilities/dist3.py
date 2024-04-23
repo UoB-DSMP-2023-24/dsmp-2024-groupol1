@@ -5,8 +5,8 @@ import pandas as pd
 import numpy as np
 from pandas import DataFrame
 
-from sklearn.manifold import TSNE
-from sklearn.decomposition import PCA
+import umap
+import umap.plot
 
 from tcrdist.repertoire import TCRrep
 
@@ -68,15 +68,11 @@ class Dist3(BaseClass):
         
         distance_matrix_filtered = self._tcr_dist_rep[self._tcr_dist_rep['antigen.epitope'].isin(_top_10_value_counts.index)]
         
-        PCA_model = PCA(n_components = 50)
-        _embedding_pca = PCA_model.fit_transform(distance_matrix_filtered.iloc[:, :-1].values)
-        #apply TSNE on 50 components.
-        TSNE_model = TSNE(n_components=2, perplexity=30.0)
-        dist_reduced = TSNE_model.fit_transform(_embedding_pca)
+        distances_reduced = umap.UMAP(n_components = 2, n_neighbors = 100, metric='hellinger').fit(distance_matrix_filtered.iloc[:, :-1].values)
         
-        visualise_data(dist_reduced, distance_matrix_filtered['antigen.epitope'], self._output_dir)
+        visualise_data(distances_reduced, distance_matrix_filtered['antigen.epitope'], self._output_dir)
         
-        self._t_cells_reduced = pd.DataFrame(dist_reduced)
+        self._t_cells_reduced = pd.DataFrame(distances_reduced.embedding_)
         self._t_cells_reduced['Epitope'] = distance_matrix_filtered['antigen.epitope'].tolist()
         
     def record_performance(self):
