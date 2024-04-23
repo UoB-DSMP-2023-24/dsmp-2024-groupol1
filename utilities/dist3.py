@@ -5,13 +5,15 @@ import pandas as pd
 import numpy as np
 from pandas import DataFrame
 
-import umap
-import umap.plot
+from sklearn.manifold import TSNE
+from sklearn.decomposition import PCA
 
 from tcrdist.repertoire import TCRrep
 
 from utilities.base import BaseClass
 from utilities.utils import visualise_data
+
+
 
 class Dist3(BaseClass):
     def __init__(self, input_data: DataFrame) -> None:
@@ -28,14 +30,35 @@ class Dist3(BaseClass):
 
         # Delete rows with null values=
         _human_data.dropna(inplace = True)
+        _TRA = _human_data[_human_data['gene'] =='TRA']
+        _TRA.rename(columns={'cdr3':'cdr3_a_aa',
+                                     'v.segm':'v_a_gene', 
+                                     'j.segm':'j_a_gene'}, 
+                            inplace=True)
+
         _TRB = _human_data[_human_data['gene'] =='TRB']
-        # rename the columns for our beta chain matrix calculation
-        beta_chains = _TRB[['cdr3', 'v.segm', 'j.segm', 'antigen.epitope']]
-        beta_chains.rename(columns={'cdr3':'cdr3_b_aa','v.segm':'v_b_gene', 'j.segm':'j_b_gene'}, inplace=True)
-        beta_chains
-        self._processed_data = beta_chains
+        _TRB.rename(columns={'cdr3':'cdr3_b_aa',
+                             'v.segm':'v_b_gene', 
+                             'j.segm':'j_b_gene'}, 
+                    inplace=True)
+
+        if self._chains == ['beta']:
+          self._processed_data = _TRB
+        elif self._chains == ['alpha']:
+          self._processed_data = _TRA
+        else:
+          _temp = pd.merge(_TRA[['cdr3_a_aa', 'v_a_gene', 'j_a_gene', 'mhc.a', 'antigen.epitope', 'vdjdb.score', 'complex.id']].reset_index(drop = True),
+                           _TRB[['cdr3_b_aa', 'v_b_gene', 'j_b_gene', 'mhc.b', 'complex.id']].reset_index(drop = True),
+                           how = 'inner',
+                           on = 'complex.id')
+          
+          self._processed_data = _temp[_temp['complex.id'] != 0]
+
+          
+
         
     def run_model(self, chains = ['beta']):
+        self._chains = chains
         self._preprocess_data()
         
         start_time = time.time()
@@ -47,34 +70,34 @@ class Dist3(BaseClass):
         
         if (len(chains)==1) and (chains[0] == 'beta'):
             distance_matrix = pd.concat([pd.DataFrame(tr.pw_cdr3_b_aa), tr.clone_df['antigen.epitope']], axis = 1)
-            chains = 'beta'
         elif (len(chains)==1) and (chains[0] == 'alpha'):
             distance_matrix = pd.concat([pd.DataFrame(tr.pw_cdr3_a_aa), tr.clone_df['antigen.epitope']], axis = 1)
-            chains = 'alpha'
         else:
             matrix = np.hstack((tr.pw_cdr3_b_aa, tr.pw_cdr3_a_aa))
             distance_matrix = pd.concat([pd.DataFrame(matrix), tr.clone_df['antigen.epitope']], axis = 1)
-            chains = 'alpha_beta'
             
         self._tcr_dist_rep = distance_matrix
  
         end_time = time.time()
         self._settings['time_to_run'] = end_time - start_time           
             
-    
-    def reduce_dimensionality(self):   
+    def reduce_dimensionality(self, title):   
         _value_counts_antigen = self._tcr_dist_rep['antigen.epitope'].value_counts()
         _top_10_value_counts = _value_counts_antigen.nlargest(7)
         
         distance_matrix_filtered = self._tcr_dist_rep[self._tcr_dist_rep['antigen.epitope'].isin(_top_10_value_counts.index)]
         
-        distances_reduced = umap.UMAP(n_components = 2, n_neighbors = 100, metric='hellinger').fit(distance_matrix_filtered.iloc[:, :-1].values)
+        PCA_model = PCA(n_components = 50)
+        _embedding_pca = PCA_model.fit_transform(distance_matrix_filtered.iloc[:, :-1].values)
+        #apply TSNE on 50 components.
+        TSNE_model = TSNE(n_components=2, perplexity=30.0)
+        dist_reduced = TSNE_model.fit_transform(_embedding_pca)
         
-        visualise_data(distances_reduced, distance_matrix_filtered['antigen.epitope'], self._output_dir)
+        visualise_data(dist_reduced, distance_matrix_filtered['antigen.epitope'], self._output_dir, title = title)
         
-        self._t_cells_reduced = pd.DataFrame(distances_reduced.embedding_)
-        self._t_cells_reduced['Epitope'] = distance_matrix_filtered['antigen.epitope'].tolist()
-        
+        self._t_cells_reduced = pd.DataFrame(dist_reduced)
+        self._t_cells_reduced['Epitope'] = distance_matrix_filtered['antigen.epitope'].tolist()   
+
     def record_performance(self):
         return self._cluster_data()
         
