@@ -112,7 +112,7 @@ def calculate_dist_and_umap(df: pd.DataFrame,
 
 
 
-def visualise_data(data, labels, output_dir):
+def visualise_data(data, labels, output_dir, title):
   plt.figure(figsize=(12, 6))
   epitope_category = pd.Categorical(labels)
   epitope_codes = epitope_category.codes
@@ -131,7 +131,7 @@ def visualise_data(data, labels, output_dir):
 
   plt.xlabel('TSNE Dim 1')
   plt.ylabel('TSNE Dim 2')
-  plt.title('Representation of beta chain by antigen specificity (PCA then TSNE)')
+  plt.title(title)
   if not os.path.exists(output_dir):
     os.makedirs(output_dir)
   plt.savefig(f'{output_dir}/beta_chain_tsne_pca.png')
