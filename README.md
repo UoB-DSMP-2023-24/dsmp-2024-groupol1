@@ -5,5 +5,5 @@ Group Number: OL1
 
 Problem Assigned: A
 
-Group Members:
+Group Members: Adnan Abdulle, Immanuel Fagboyegun, Khizer Kazmi, Joe Sharrat.
 
