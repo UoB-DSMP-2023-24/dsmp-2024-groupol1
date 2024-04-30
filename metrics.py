@@ -1,7 +1,6 @@
 import pandas as pd
 import numpy as np
-from sklearn.metrics import adjusted_mutual_info_score
-from sklearn.metrics import multilabel_confusion_matrix
+from sklearn.metrics import adjusted_mutual_info_score, multilabel_confusion_matrix
 
 
 def get_purity(df: pd.DataFrame) -> dict:
@@ -164,7 +163,6 @@ def get_clustermetrics(df: pd.DataFrame):
     # Compute predictive metrics
     ypred = sub['cluster'].map(stats['most_frequent'])
     ytrue = sub['epitope']
-    ami = adjusted_mutual_info_score(ytrue,ypred)
     accuracy, precision, recall, f1score, support, epmetrics = precision_recall_fscore(
             df, ytrue, ypred)
     ami = adjusted_mutual_info_score(ytrue, ypred)
