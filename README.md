@@ -1,9 +1,9 @@
 # Group Repository for the Data Science Mini-Project (EMATM0050)
 
 ## Please edit the fields below with your information
-Group Number: 
+Group Number: OL1
 
-Problem Assigned: 
+Problem Assigned: A
 
-Group Members:
+Group Members: Adnan Abdulle, Immanuel Fagboyegun, Khizer Kazmi, Joe Sharrat.
 
