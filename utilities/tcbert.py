@@ -113,10 +113,10 @@ class BertTcr(BaseClass):
                                    self._antigen_epitope], 
                                   axis = 1)
         
-        _value_counts_antigen = _embedding_df['antigen.epitope'].value_counts()
         #we will only visualise the top 7 most commonly occuring antigens in dataset else visualisation would be uninterpretable
-        _top_10_value_counts = _value_counts_antigen.nlargest(7)
-        _embedding_df_filtered = _embedding_df[_embedding_df['antigen.epitope'].isin(_top_10_value_counts.index)]
+        list_eps = ['ATDALMTGY', 'ELAGIGILTV', 'GILGFVFTL', 'GLCTLVAML', 'KRWIILGLNK', 'NLVPMVATV', 'RAKFKQLL']
+  
+        _embedding_df_filtered = _embedding_df[_embedding_df['antigen.epitope'].isin(list_eps)]
 
 
         PCA_model = PCA(n_components = 50)

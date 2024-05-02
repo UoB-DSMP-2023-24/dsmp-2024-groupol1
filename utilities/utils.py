@@ -117,7 +117,8 @@ def visualise_data(data, labels, output_dir, title):
   epitope_category = pd.Categorical(labels)
   epitope_codes = epitope_category.codes
   epitope_labels = epitope_category.categories
-  colormap = matplotlib.colormaps.get_cmap('Set1')
+  num_unique_labels = len(epitope_labels)
+  colormap = plt.get_cmap('Set1', num_unique_labels)  
   
   sc = plt.scatter(data[:, 0],
                    data[:, 1],

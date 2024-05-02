@@ -83,9 +83,12 @@ class Dist3(BaseClass):
             
     def reduce_dimensionality(self, title):   
         _value_counts_antigen = self._tcr_dist_rep['antigen.epitope'].value_counts()
-        _top_10_value_counts = _value_counts_antigen.nlargest(7)
+        if self._chains == ['alpha', 'beta']:
+          list_of_eps = ['ATDALMTGY', 'ELAGIGILTV', 'GILGFVFTL', 'GLCTLVAML',  'NLVPMVATV', 'RAKFKQLL']
+        else:
+          list_of_eps = ['ATDALMTGY', 'ELAGIGILTV', 'GILGFVFTL', 'GLCTLVAML', 'KRWIILGLNK', 'NLVPMVATV', 'RAKFKQLL']
         
-        distance_matrix_filtered = self._tcr_dist_rep[self._tcr_dist_rep['antigen.epitope'].isin(_top_10_value_counts.index)]
+        distance_matrix_filtered = self._tcr_dist_rep[self._tcr_dist_rep['antigen.epitope'].isin(list_of_eps)]
         
         PCA_model = PCA(n_components = 50)
         _embedding_pca = PCA_model.fit_transform(distance_matrix_filtered.iloc[:, :-1].values)
